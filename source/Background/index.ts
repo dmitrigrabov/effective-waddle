@@ -27,10 +27,13 @@ const listener = ({
 
     const tweet = JSON.parse(str)
 
-    const videos =
+    const media =
       tweet?.data?.threaded_conversation_with_injections_v2?.instructions?.[0]
         ?.entries?.[0]?.content?.itemContent?.tweet_results?.result?.legacy
-        ?.extended_entities?.media?.[0]?.video_info?.variants
+        ?.extended_entities?.media?.[0]
+
+    const videos = media?.video_info?.variants
+    const thumbnail = media?.media_url_https
 
     if (!videos?.length) {
       return
@@ -39,6 +42,7 @@ const listener = ({
     const videoFoundMessage: VideosFoundMessage = {
       type: 'VIDEOS_FOUND',
       sourceUrl: documentUrl,
+      thumbnail,
       media: videos
     }
 
