@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "Sample WebExtension",
+  "name": "Data Helper",
   "version": "0.0.0",
   "icons": {
     "16": "assets/icons/favicon-16.png",
@@ -8,9 +8,18 @@
     "48": "assets/icons/favicon-48.png",
     "128": "assets/icons/favicon-128.png"
   },
-  "description": "Sample description",
   "homepage_url": "https://github.com/abhijithvijayan/web-extension-starter",
-  "short_name": "Sample Name",
+  "sidebar_action": {
+    "default_icon": {
+      "16": "button/geo-16.png",
+      "32": "button/geo-32.png",
+      "48": "assets/icons/favicon-48.png",
+      "128": "assets/icons/favicon-128.png"
+    },
+    "default_title": "Data Helper",
+    "default_panel": "sidebar.html",
+    "open_at_install": true
+  },
   "permissions": [
     "activeTab",
     "storage",
