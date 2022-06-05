@@ -1,10 +1,8 @@
-import * as React from 'react';
-import {browser, Tabs} from 'webextension-polyfill-ts';
-
-import './styles.scss';
+import * as React from 'react'
+import { browser, Tabs } from 'webextension-polyfill-ts'
 
 function openWebPage(url: string): Promise<Tabs.Tab> {
-  return browser.tabs.create({url});
+  return browser.tabs.create({ url })
 }
 
 const Popup: React.FC = () => {
@@ -15,7 +13,7 @@ const Popup: React.FC = () => {
         id="options__button"
         type="button"
         onClick={(): Promise<Tabs.Tab> => {
-          return openWebPage('options.html');
+          return openWebPage('options.html')
         }}
       >
         Options Page
@@ -28,7 +26,7 @@ const Popup: React.FC = () => {
               onClick={(): Promise<Tabs.Tab> => {
                 return openWebPage(
                   'https://github.com/abhijithvijayan/web-extension-starter'
-                );
+                )
               }}
             >
               GitHub
@@ -40,7 +38,7 @@ const Popup: React.FC = () => {
               onClick={(): Promise<Tabs.Tab> => {
                 return openWebPage(
                   'https://www.buymeacoffee.com/abhijithvijayan'
-                );
+                )
               }}
             >
               Buy Me A Coffee
@@ -49,7 +47,7 @@ const Popup: React.FC = () => {
         </ul>
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default Popup;
+export default Popup
