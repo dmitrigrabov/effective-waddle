@@ -1,17 +1,21 @@
-import 'emoji-log'
 import { browser, WebRequest } from 'webextension-polyfill-ts'
+import { VideosFoundMessage } from '../types'
 
-const listener = (details: WebRequest.OnBeforeRequestDetailsType) => {
+const listener = ({
+  url,
+  documentUrl,
+  requestId
+}: WebRequest.OnBeforeRequestDetailsType) => {
   const detailsPath =
     /^https:\/\/twitter.com\/i\/api\/graphql\/[0-9a-z_]*\/TweetDetail\?/gi
 
-  if (!detailsPath.test(details.url)) {
+  const statusPath = /^https:\/\/twitter.com\/[0-9a-z_]+\/status\/[0-9]*/gi
+
+  if (!detailsPath.test(url) || !documentUrl || !statusPath.test(documentUrl)) {
     return
   }
 
-  console.log(details)
-
-  const filter = browser.webRequest.filterResponseData(details.requestId)
+  const filter = browser.webRequest.filterResponseData(requestId)
   const decoder = new TextDecoder('utf-8')
   const encoder = new TextEncoder()
 
@@ -23,22 +27,24 @@ const listener = (details: WebRequest.OnBeforeRequestDetailsType) => {
 
     const tweet = JSON.parse(str)
 
-    const media =
+    const videos =
       tweet?.data?.threaded_conversation_with_injections_v2?.instructions?.[0]
         ?.entries?.[0]?.content?.itemContent?.tweet_results?.result?.legacy
-        ?.extended_entities?.media?.[0]
+        ?.extended_entities?.media?.[0]?.video_info?.variants
 
-    if (!media) {
+    if (!videos?.length) {
       return
     }
 
-    console.log(media?.video_info?.variants)
+    const videoFoundMessage: VideosFoundMessage = {
+      type: 'VIDEOS_FOUND',
+      sourceUrl: documentUrl,
+      media: videos
+    }
+
+    browser.runtime.sendMessage(undefined, videoFoundMessage)
   }
 }
-
-browser.runtime.onInstalled.addListener((): void => {
-  console.emoji('🦄', 'extension installed')
-})
 
 browser.webRequest.onBeforeRequest.addListener(
   listener,
