@@ -1,6 +1,8 @@
 import React, { FC, useEffect, useState } from 'react'
 import { browser } from 'webextension-polyfill-ts'
 import styled from 'styled-components'
+import { TwitterTweetEmbed } from 'react-twitter-embed'
+import { pathToRegexp } from 'path-to-regexp'
 import { Message, Video } from '../types'
 
 const SidebarContainer = styled.div`
@@ -12,20 +14,7 @@ const SidebarContainer = styled.div`
 const EvidenceContainer = styled.div`
   display: flex;
   flex-direction: column;
-  padding-bottom: 16px;
-`
-
-const EvidenceHeader = styled.div`
-  display: flex;
-  padding-bottom: 16px;
-  font-size: 20px;
-`
-
-const Thumbnail = styled.img`
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
-  margin-bottom: 16px;
+  padding-bottom: 32px;
 `
 
 const ButtonsContainer = styled.div`
@@ -67,29 +56,24 @@ const selectTopVideo = (videos: Video[]) => {
 }
 
 const Sidebar: FC = () => {
-  const [videos, setVideos] = useState<Record<string, Record<string, Video>>>(
-    {}
-  )
+  const [videos, setVideos] = useState<Record<string, Video>>({})
 
   useEffect(() => {
     browser.runtime.onMessage.addListener((message: Message) => {
       if (message.type === 'VIDEOS_FOUND') {
         setVideos((existingVideos) => {
-          const matchingSource = existingVideos[message.sourceUrl] ?? {}
+          const topVideo = selectTopVideo(message.media)
 
-          const updatedSource = message.media.reduce((acc, mediaItem) => {
-            return {
-              ...acc,
-              [mediaItem.url]: {
-                ...mediaItem,
-                thumbnail: message.thumbnail
-              }
-            }
-          }, matchingSource)
+          if (!topVideo) {
+            return existingVideos
+          }
 
           return {
             ...existingVideos,
-            [message.sourceUrl]: updatedSource
+            [message.sourceUrl]: {
+              ...topVideo,
+              thumbnail: message.thumbnail
+            }
           }
         })
       }
@@ -103,18 +87,13 @@ const Sidebar: FC = () => {
   return (
     <SidebarContainer>
       {Object.keys(videos).map((key) => {
-        const topVideo = selectTopVideo(Object.values(videos[key]))
-
-        if (!topVideo) {
-          return null
-        }
-
-        const { thumbnail } = topVideo
+        const regexp = pathToRegexp('/:username/status/:tweetId')
+        const url = new URL(key)
+        const result = regexp.exec(url.pathname)
 
         return (
           <EvidenceContainer key={key}>
-            <EvidenceHeader>{key}</EvidenceHeader>
-            {thumbnail ? <Thumbnail src={thumbnail} alt="" /> : null}
+            {result?.[2] ? <TwitterTweetEmbed tweetId={result[2]} /> : null}
 
             <ButtonsContainer>
               <Button type="button">Archive</Button>

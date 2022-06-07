@@ -28,7 +28,7 @@
     "http://*/*",
     "https://*/*"
   ],
-  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "content_security_policy": "script-src 'self' https://platform.twitter.com; object-src 'self'",
   "__chrome|firefox__author": "abhijithvijayan",
   "__opera__developer": {
     "name": "abhijithvijayan"
