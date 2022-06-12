@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useCallback, useEffect, useState } from 'react'
 import { browser } from 'webextension-polyfill-ts'
 import styled from 'styled-components'
 import { TwitterTweetEmbed } from 'react-twitter-embed'
@@ -58,27 +58,37 @@ const selectTopVideo = (videos: Video[]) => {
 const Sidebar: FC = () => {
   const [videos, setVideos] = useState<Record<string, Video>>({})
 
+  const messageListener = useCallback((message: Message) => {
+    if (message.type === 'VIDEOS_FOUND') {
+      setVideos((existingVideos) => {
+        const topVideo = selectTopVideo(message.media)
+
+        if (!topVideo) {
+          return existingVideos
+        }
+
+        return {
+          ...existingVideos,
+          [message.sourceUrl]: {
+            ...topVideo,
+            thumbnail: message.thumbnail
+          }
+        }
+      })
+    }
+  }, [])
+
   useEffect(() => {
-    browser.runtime.onMessage.addListener((message: Message) => {
-      if (message.type === 'VIDEOS_FOUND') {
-        setVideos((existingVideos) => {
-          const topVideo = selectTopVideo(message.media)
+    browser.runtime.onMessage.addListener(messageListener)
 
-          if (!topVideo) {
-            return existingVideos
-          }
-
-          return {
-            ...existingVideos,
-            [message.sourceUrl]: {
-              ...topVideo,
-              thumbnail: message.thumbnail
-            }
-          }
-        })
+    return () => {
+      if (!browser.runtime.onMessage.hasListener(messageListener)) {
+        console.log('Listener not registered')
       }
-    })
-  })
+
+      browser.runtime.onMessage.removeListener(messageListener)
+    }
+  }, [messageListener])
 
   if (!Object.keys(videos).length) {
     return <div>Discovered media urls will be displayed here</div>
@@ -88,6 +98,8 @@ const Sidebar: FC = () => {
     <SidebarContainer>
       {Object.keys(videos).map((key) => {
         const regexp = pathToRegexp('/:username/status/:tweetId')
+
+        console.log('Creating url for: ', JSON.stringify(key))
         const url = new URL(key)
         const result = regexp.exec(url.pathname)
 

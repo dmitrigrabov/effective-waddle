@@ -20,6 +20,13 @@
     "default_panel": "sidebar.html",
     "open_at_install": true
   },
+  "page_action": {
+    "default_icon": {
+      "19": "assets/icons/Highlights.svg",
+      "38": "assets/icons/Highlights.svg"
+    },
+    "default_title": "Data Helper"
+  },
   "permissions": [
     "activeTab",
     "storage",
