@@ -1,5 +1,5 @@
 import { browser, WebRequest } from 'webextension-polyfill-ts'
-import { VideosFoundMessage } from '../types'
+import { FoundMedia, VideosFoundMessage } from '../types'
 
 interface OnDataArgs {
   filter: WebRequest.StreamFilter
@@ -8,9 +8,11 @@ interface OnDataArgs {
   tabId: number
 }
 
+const matchingUrls: Record<string, FoundMedia> = {}
+
 const onData =
   ({ filter, decoder, encoder, tabId }: OnDataArgs) =>
-  (event: WebRequest.StreamFilterEventData) => {
+  async (event: WebRequest.StreamFilterEventData) => {
     const str = decoder.decode(event.data, { stream: true })
 
     filter.write(encoder.encode(str))
@@ -33,22 +35,25 @@ const onData =
       return
     }
 
+    const sourceUrl = `https://twitter.com/${screenName}/status/${tweetId}`
+
     const videoFoundMessage: VideosFoundMessage = {
       type: 'VIDEOS_FOUND',
-      sourceUrl: `https://twitter.com/${screenName}/status/${tweetId}`,
+      sourceUrl,
       thumbnail,
       media: videos
     }
 
     console.log(videoFoundMessage)
 
-    // browser.runtime.sendMessage(undefined, videoFoundMessage)
+    matchingUrls[sourceUrl] = {
+      sourceUrl,
+      thumbnail,
+      video: videos
+    }
 
-    // TODO
-    // Persist urls which can be archived
-    // Toggle based on urls
-    console.log('Show in ', tabId)
-    browser.pageAction.show(tabId)
+    const matchingTabs = await browser.tabs.query({ url: sourceUrl })
+    matchingTabs.forEach((tab) => tab.id && browser.pageAction.show(tab.id))
   }
 
 const onBeforeRequest = ({
@@ -92,8 +97,27 @@ browser.webRequest.onBeforeRequest.addListener(
   ['blocking']
 )
 
-browser.tabs.onUpdated.addListener((tabId) => {
-  // TODO Hide can be called after show
-  console.log('Hide in ', tabId)
-  browser.pageAction.hide(tabId)
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (tab.url && matchingUrls[tab.url]) {
+    browser.pageAction.show(tabId)
+  } else {
+    browser.pageAction.hide(tabId)
+  }
+})
+
+browser.pageAction.onClicked.addListener((tab) => {
+  if (!tab.url) {
+    return
+  }
+
+  const foundMedia = matchingUrls[tab.url]
+
+  if (!foundMedia) {
+    return
+  }
+
+  browser.runtime.sendMessage(undefined, {
+    ...foundMedia,
+    type: 'MEDIA_FOUND'
+  })
 })

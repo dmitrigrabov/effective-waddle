@@ -1,20 +1,19 @@
 import React, { FC, useCallback, useEffect, useState } from 'react'
 import { browser } from 'webextension-polyfill-ts'
 import styled from 'styled-components'
-import { TwitterTweetEmbed } from 'react-twitter-embed'
-import { pathToRegexp } from 'path-to-regexp'
-import { Message, Video } from '../types'
+import {
+  Autocomplete,
+  FormField,
+  TextInput,
+  TextInputField
+} from 'evergreen-ui'
+import { FoundMedia, Message } from '../types'
+import { selectTopVideo } from '../lib/selectTopVideo'
 
 const SidebarContainer = styled.div`
   display: flex;
   flex-direction: column;
   padding: 20px;
-`
-
-const EvidenceContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 32px;
 `
 
 const ButtonsContainer = styled.div`
@@ -28,53 +27,13 @@ const Button = styled.button`
   margin-left: 8px;
 `
 
-const selectTopVideo = (videos: Video[]) => {
-  return videos.reduce<Video | null>((acc, video) => {
-    if (acc === null) {
-      return video
-    }
-
-    if (
-      acc.content_type === 'application/x-mpegURL' &&
-      video.content_type === 'video/mp4'
-    ) {
-      return video
-    }
-
-    if (
-      acc.content_type === 'video/mp4' &&
-      video.content_type === 'video/mp4' &&
-      video.bitrate &&
-      acc.bitrate &&
-      video.bitrate > acc.bitrate
-    ) {
-      return video
-    }
-
-    return acc
-  }, null)
-}
-
 const Sidebar: FC = () => {
-  const [videos, setVideos] = useState<Record<string, Video>>({})
+  const [media, setMedia] = useState<FoundMedia>()
 
   const messageListener = useCallback((message: Message) => {
-    if (message.type === 'VIDEOS_FOUND') {
-      setVideos((existingVideos) => {
-        const topVideo = selectTopVideo(message.media)
-
-        if (!topVideo) {
-          return existingVideos
-        }
-
-        return {
-          ...existingVideos,
-          [message.sourceUrl]: {
-            ...topVideo,
-            thumbnail: message.thumbnail
-          }
-        }
-      })
+    if (message.type === 'MEDIA_FOUND') {
+      const { type, ...contents } = message
+      setMedia(contents)
     }
   }, [])
 
@@ -90,35 +49,81 @@ const Sidebar: FC = () => {
     }
   }, [messageListener])
 
-  if (!Object.keys(videos).length) {
-    return <div>Discovered media urls will be displayed here</div>
+  if (!media) {
+    return (
+      <SidebarContainer>
+        Uploads available for urls that include video content and match pattern
+        below
+        <ul>
+          <li>https://twitter.com/:accountName/status/:postId</li>
+        </ul>
+      </SidebarContainer>
+    )
   }
+
+  const video = selectTopVideo(media.video)
 
   return (
     <SidebarContainer>
-      {Object.keys(videos).map((key) => {
-        const regexp = pathToRegexp('/:username/status/:tweetId')
+      <TextInputField label="Link" value={media.sourceUrl} disabled />
+      <TextInputField label="Video Link" value={video?.url ?? ''} disabled />
+      <TextInputField
+        label="Thumbnail"
+        value={media.thumbnail ?? ''}
+        disabled
+      />
+      <TextInputField label="Address - if known" value="" />
+      <TextInputField label="Town" value="" />
+      <FormField label="Oblast">
+        <Autocomplete
+          onChange={(changedItem) => console.log(changedItem)}
+          items={[
+            'Cherkasy Oblast',
+            'Chernihiv Oblast',
+            'Chernivtsi Oblast',
+            'Dnipropetrovsk Oblast',
+            'Donetsk Oblast',
+            'Ivano-Frankivsk Oblast',
+            'Kharkiv Oblast',
+            'Kherson Oblast',
+            'Khmelnytskyi Oblast',
+            'Kyiv Oblast',
+            'Kirovohrad Oblast',
+            'Luhansk Oblast',
+            'Lviv Oblast',
+            'Mykolaiv Oblast',
+            'Odessa Oblast',
+            'Poltava Oblast',
+            'Rivne Oblast',
+            'Sumy Oblast',
+            'Ternopil Oblast',
+            'Vinnytsia Oblast',
+            'Volyn Oblast',
+            'Zakarpattia Oblast',
+            'Zaporizhzhia Oblast',
+            'Zhytomyr Oblast'
+          ]}
+        >
+          {(props) => {
+            const { getInputProps, getRef, openMenu } = props
 
-        console.log('Creating url for: ', JSON.stringify(key))
-        const url = new URL(key)
-        const result = regexp.exec(url.pathname)
-
-        return (
-          <EvidenceContainer key={key}>
-            {result?.[2] ? <TwitterTweetEmbed tweetId={result[2]} /> : null}
-
-            <ButtonsContainer>
-              <Button type="button">Archive</Button>
-              <Button
-                type="button"
-                onClick={() => browser.tabs.create({ url: key })}
-              >
-                View
-              </Button>
-            </ButtonsContainer>
-          </EvidenceContainer>
-        )
-      })}
+            return (
+              <TextInput
+                width="100%"
+                ref={getRef}
+                {...getInputProps({
+                  onFocus: () => {
+                    openMenu()
+                  },
+                  onBlur: () => {},
+                  onKeyDown: () => {},
+                  onChange: () => {}
+                })}
+              />
+            )
+          }}
+        </Autocomplete>
+      </FormField>
     </SidebarContainer>
   )
 }

@@ -6,8 +6,13 @@ export interface Evidence {
 export interface Video {
   content_type: string
   bitrate?: number
-  thumbnail?: string
   url: string
+}
+
+export interface FoundMedia {
+  sourceUrl: string
+  thumbnail: string
+  video: Video[]
 }
 
 export interface VideosFoundMessage {
@@ -17,4 +22,11 @@ export interface VideosFoundMessage {
   media: Video[]
 }
 
-export type Message = VideosFoundMessage
+export interface FoundMediaMessage {
+  type: 'MEDIA_FOUND'
+  sourceUrl: string
+  thumbnail: string
+  video: Video[]
+}
+
+export type Message = VideosFoundMessage | FoundMediaMessage
