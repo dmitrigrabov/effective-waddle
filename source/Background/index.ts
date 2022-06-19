@@ -1,5 +1,5 @@
 import { browser, WebRequest } from 'webextension-polyfill-ts'
-import { FoundMedia, VideosFoundMessage } from '../types'
+import { FoundMedia } from '../types'
 
 interface OnDataArgs {
   filter: WebRequest.StreamFilter
@@ -36,15 +36,6 @@ const onData =
     }
 
     const sourceUrl = `https://twitter.com/${screenName}/status/${tweetId}`
-
-    const videoFoundMessage: VideosFoundMessage = {
-      type: 'VIDEOS_FOUND',
-      sourceUrl,
-      thumbnail,
-      media: videos
-    }
-
-    console.log(videoFoundMessage)
 
     matchingUrls[sourceUrl] = {
       sourceUrl,
@@ -115,9 +106,10 @@ browser.pageAction.onClicked.addListener((tab) => {
   if (!foundMedia) {
     return
   }
-
+  console.log('Sending MEDIA_FOUND message')
   browser.runtime.sendMessage(undefined, {
     ...foundMedia,
     type: 'MEDIA_FOUND'
   })
+  console.log('Sent MEDIA_FOUND message')
 })

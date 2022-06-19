@@ -15,18 +15,21 @@ export interface FoundMedia {
   video: Video[]
 }
 
-export interface VideosFoundMessage {
-  type: 'VIDEOS_FOUND'
-  sourceUrl: string
-  thumbnail: string
-  media: Video[]
-}
-
-export interface FoundMediaMessage {
+export interface FoundMediaMessage extends FoundMedia {
   type: 'MEDIA_FOUND'
-  sourceUrl: string
-  thumbnail: string
-  video: Video[]
 }
 
-export type Message = VideosFoundMessage | FoundMediaMessage
+export interface ArchiveLinkMessage {
+  type: 'ARCHIVE_URL'
+  url: string
+}
+
+export interface ArchiverLoadedMessage {
+  type: 'ARCHIVER_LOADED'
+  tabId: number
+}
+
+export type Message =
+  | FoundMediaMessage
+  | ArchiveLinkMessage
+  | ArchiverLoadedMessage
